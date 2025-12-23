@@ -35,6 +35,10 @@ const defaultVocab = [
 let vocab = []
 let reviewQueue = []
 let currentIndex = 0
+let currentRecorder = null
+let currentRecordChunks = []
+let currentRecordingIdx = null
+let currentStream = null
 
 // SRS schedule in minutes (for quick testing small values, increase for real use)
 const SCHEDULE_MINUTES = [1, 10, 60*24, 60*24*3, 60*24*7, 60*24*30]
@@ -67,16 +71,103 @@ function renderList(){
     const right = document.createElement('div')
     right.style.display='flex'
     right.style.gap='8px'
+    // play: prefer uploaded/recorded audio, else TTS
     const play = document.createElement('button')
     play.textContent='🔊'
-    play.onclick = ()=>speak(w.term)
+    play.onclick = ()=> playAudio(w)
+
+    // upload input (hidden) and button
+    const fileInput = document.createElement('input')
+    fileInput.type = 'file'
+    fileInput.accept = 'audio/*'
+    fileInput.style.display = 'none'
+    fileInput.onchange = (e)=>{ const f=e.target.files[0]; if(f) handleUploadForWord(i,f) }
+    const uploadBtn = document.createElement('button')
+    uploadBtn.textContent = 'Upload'
+    uploadBtn.onclick = ()=> fileInput.click()
+
+    // record button
+    const recBtn = document.createElement('button')
+    recBtn.textContent = 'Record'
+    recBtn.onclick = ()=> toggleRecordingForIndex(i, recBtn)
+
+    // delete word
     const del = document.createElement('button')
     del.textContent='Delete'
     del.onclick = ()=>{ if(confirm('Delete this word?')){ vocab.splice(i,1); saveVocab() } }
-    right.append(play,del)
+
+    // delete audio
+    const delAudio = document.createElement('button')
+    delAudio.textContent = 'Delete audio'
+    delAudio.onclick = ()=>{ const idx=vocab.findIndex(x=>x.term===w.term && x.meaning===w.meaning); if(idx>=0){ delete vocab[idx].audioData; saveVocab() } }
+
+    right.append(play, uploadBtn, recBtn, delAudio, del, fileInput)
     li.append(left,right)
     ul.append(li)
   })
+}
+
+function playAudio(w){
+  if(w && w.audioData){
+    try{
+      const a = new Audio(w.audioData)
+      a.play()
+      return
+    }catch(e){ console.warn('playback failed',e) }
+  }
+  // fallback to TTS
+  speak(w.term)
+}
+
+// Handle user upload for a given vocab index
+function handleUploadForWord(index, file){
+  const reader = new FileReader()
+  reader.onload = e=>{
+    const dataUrl = e.target.result
+    const idx = vocab.findIndex(x=>x.term===vocab[index].term && x.meaning===vocab[index].meaning)
+    if(idx>=0){ vocab[idx].audioData = dataUrl; saveVocab(); alert('Audio uploaded') }
+  }
+  reader.readAsDataURL(file)
+}
+
+// Recording controls
+async function toggleRecordingForIndex(index, buttonEl){
+  if(currentRecorder && currentRecordingIdx===index){
+    // stop
+    currentRecorder.stop()
+    buttonEl.textContent = 'Record'
+    return
+  }
+  // if another recording active, stop it first
+  if(currentRecorder){ currentRecorder.stop(); }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return alert('Recording not supported on this device')
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true})
+    currentStream = stream
+    currentRecordChunks = []
+    const mr = new MediaRecorder(stream)
+    currentRecorder = mr
+    currentRecordingIdx = index
+    buttonEl.textContent = 'Stop'
+    mr.ondataavailable = ev => { if(ev.data && ev.data.size>0) currentRecordChunks.push(ev.data) }
+    mr.onstop = async ()=>{
+      const blob = new Blob(currentRecordChunks, {type: currentRecordChunks[0]?.type || 'audio/webm'})
+      // convert to dataURL
+      const r = new FileReader()
+      r.onload = e=>{
+        const dataUrl = e.target.result
+        const idx = vocab.findIndex(x=>x.term===vocab[index].term && x.meaning===vocab[index].meaning)
+        if(idx>=0){ vocab[idx].audioData = dataUrl; saveVocab(); alert('Recording saved') }
+      }
+      r.readAsDataURL(blob)
+      // cleanup
+      currentRecorder = null
+      currentRecordChunks = []
+      currentRecordingIdx = null
+      if(currentStream){ currentStream.getTracks().forEach(t=>t.stop()); currentStream=null }
+    }
+    mr.start()
+  }catch(err){ alert('Microphone access denied or error: '+err.message) }
 }
 
 function addWord(term,meaning,notes){
@@ -127,12 +218,60 @@ function markAnswer(correct){
   showCard()
 }
 
+// Voice selection and speaking
+const VOICE_STORAGE_KEY = 'serbian_voice_name'
+
+function getSavedVoiceName(){ return localStorage.getItem(VOICE_STORAGE_KEY) }
+function saveVoiceName(name){ localStorage.setItem(VOICE_STORAGE_KEY, name) }
+
+function populateVoices(){
+  const select = document.getElementById('voiceSelect')
+  select.innerHTML = ''
+  if(!window.speechSynthesis){
+    const opt = document.createElement('option'); opt.textContent = 'No speech support'; opt.disabled=true; select.append(opt); return
+  }
+  const voices = speechSynthesis.getVoices() || []
+  // prefer voices with Serbian language tag
+  const preferred = voices.filter(v=>v.lang && v.lang.toLowerCase().startsWith('sr'))
+  const saved = getSavedVoiceName()
+  // helper to add option
+  function addOption(v){
+    const o = document.createElement('option'); o.value = v.name; o.textContent = `${v.name} — ${v.lang}`; select.append(o)
+  }
+  // if no voices yet, show placeholder
+  if(voices.length===0){
+    const o = document.createElement('option'); o.textContent = 'Loading voices…'; o.disabled=true; select.append(o); return
+  }
+  // add Serbian voices first
+  preferred.forEach(addOption)
+  // add remaining voices (avoid duplicates)
+  voices.filter(v=>!preferred.includes(v)).forEach(addOption)
+
+  // select saved voice if available, else pick best Serbian voice, else first
+  const choose = () => {
+    if(saved){
+      const matched = voices.find(v=>v.name===saved)
+      if(matched){ select.value = matched.name; return }
+    }
+    if(preferred.length) { select.value = preferred[0].name; return }
+    select.value = voices[0].name
+  }
+  choose()
+}
+
 function speak(text){
   if(!window.speechSynthesis) return alert('Speech synthesis not supported')
   const utter = new SpeechSynthesisUtterance(text)
-  // try Serbian locale
-  utter.lang = 'sr-RS'
   utter.rate = 0.95
+  // pick voice by saved selection
+  const select = document.getElementById('voiceSelect')
+  const name = select && select.value ? select.value : getSavedVoiceName()
+  if(name && window.speechSynthesis.getVoices){
+    const v = speechSynthesis.getVoices().find(x=>x.name===name)
+    if(v) utter.voice = v
+  }
+  // ensure language tag is set to Serbian to help engines choose pronunciation
+  utter.lang = 'sr-RS'
   speechSynthesis.cancel()
   speechSynthesis.speak(utter)
 }
@@ -172,6 +311,16 @@ function exportCSV(){
 // UI wiring
 document.addEventListener('DOMContentLoaded',()=>{
   loadVocab(); renderList();
+  // populate voices (may be async)
+  if(window.speechSynthesis){
+    const sel = document.getElementById('voiceSelect')
+    const saved = getSavedVoiceName()
+    // populate now and also after voiceschanged
+    populateVoices()
+    window.speechSynthesis.onvoiceschanged = () => populateVoices()
+    // when user changes selection, save it
+    sel.addEventListener('change', e=>{ saveVoiceName(e.target.value) })
+  }
   document.getElementById('addForm').addEventListener('submit',e=>{
     e.preventDefault(); const term=document.getElementById('term').value.trim(); const meaning=document.getElementById('meaning').value.trim(); const notes=document.getElementById('notes').value.trim(); if(!term||!meaning) return; addWord(term,meaning,notes); e.target.reset()
   })
