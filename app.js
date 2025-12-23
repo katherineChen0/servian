@@ -181,8 +181,53 @@ function speak(text){
   utter.rate = 0.95
   // ask engine to use Serbian pronunciation
   utter.lang = 'sr-RS'
+  // Attempt to use the preferred Serbian/Slovenian voice if available
+  try{
+    const voices = window.speechSynthesis.getVoices() || []
+    // prefer voices whose lang starts with 'sr' or 'sl'
+    let preferred = voices.find(v => /^sr(-|$)/i.test(v.lang) || /^sl(-|$)/i.test(v.lang))
+    // if none found, try matching by name hints
+    if(!preferred) preferred = voices.find(v => /serbian|slovenian|srpski|slovenski/i.test(v.name))
+    // fall back to saved voice name if present
+    const saved = getSavedVoiceName()
+    if(!preferred && saved){ preferred = voices.find(v=>v.name===saved) }
+    if(preferred) utter.voice = preferred
+  }catch(e){ console.warn('voice selection error', e) }
   speechSynthesis.cancel()
   speechSynthesis.speak(utter)
+}
+
+// Voice selection helpers: prefer Serbian/Slovenian voices and persist the chosen name
+const VOICE_STORAGE_KEY = 'servian_preferred_voice'
+function saveVoiceName(name){ try{ localStorage.setItem(VOICE_STORAGE_KEY, name) }catch(e){} }
+function getSavedVoiceName(){ try{ return localStorage.getItem(VOICE_STORAGE_KEY) }catch(e){ return null } }
+
+function populateVoices(){
+  const sel = document.getElementById('voiceSelect')
+  if(!sel || !window.speechSynthesis) return
+  const voices = window.speechSynthesis.getVoices() || []
+  sel.innerHTML = ''
+  voices.forEach(v=>{
+    const opt = document.createElement('option')
+    opt.value = v.name
+    opt.textContent = `${v.name} (${v.lang})`
+    sel.appendChild(opt)
+  })
+  // pick preferred sr/sl voice
+  let preferred = voices.find(v => /^sr(-|$)/i.test(v.lang) || /^sl(-|$)/i.test(v.lang))
+  if(!preferred) preferred = voices.find(v => /serbian|slovenian|srpski|slovenski/i.test(v.name))
+  const saved = getSavedVoiceName()
+  if(!preferred && saved){ preferred = voices.find(v=>v.name===saved) }
+  if(preferred){
+    // select it and lock selection so pronunciation stays consistent
+    sel.value = preferred.name
+    sel.disabled = true
+    saveVoiceName(preferred.name)
+  } else {
+    // no preferred voice available; keep selector enabled so user can pick if they want
+    if(saved && voices.find(v=>v.name===saved)) sel.value = saved
+    sel.disabled = false
+  }
 }
 
 // Import / Export
