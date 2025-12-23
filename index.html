@@ -13,22 +13,9 @@
   </header>
 
   <main>
-    <section class="card-area" id="cardArea">
-      <div id="card" class="card">
-        <div id="front" class="face front">Press "Start Review" to begin</div>
-        <div id="back" class="face back"></div>
-      </div>
-      <div class="controls">
-        <button id="startReviewBtn">Start Review</button>
-        <button id="speakBtn">🔊 Pronounce</button>
-        <label for="voiceSelect" class="sr-only">Voice</label>
-        <select id="voiceSelect" title="Choose pronunciation voice"></select>
-        <button id="showBackBtn">Show Translation</button>
-      </div>
-      <div id="reviewFeedback" class="feedback">
-        <button id="correctBtn" class="good">I knew it</button>
-        <button id="wrongBtn" class="bad">I didn't</button>
-      </div>
+    <!-- Review UI removed: pronunciations are available per-word in Your Words list -->
+    <section class="card-area" id="cardArea" aria-hidden="true" style="display:none">
+      <!-- kept hidden for backward compatibility; removed from UI -->
     </section>
 
     <section class="add-area">

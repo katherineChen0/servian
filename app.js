@@ -33,12 +33,9 @@ const defaultVocab = [
 ]
 
 let vocab = []
-let reviewQueue = []
-let currentIndex = 0
 // Recording removed: app uses uploaded audio or TTS only
 
-// SRS schedule in minutes (for quick testing small values, increase for real use)
-const SCHEDULE_MINUTES = [1, 10, 60*24, 60*24*3, 60*24*7, 60*24*30]
+// Note: review/SRS functionality removed — app focuses on word management and per-word pronunciation
 
 function loadVocab(){
   try{
@@ -133,47 +130,7 @@ function addWord(term,meaning,notes){
 }
 
 // Review queue: pick items due now (nextReview <= now) or all if none due
-function buildReviewQueue(){
-  const now = Date.now()
-  const due = vocab.filter(w=>w.nextReview <= now)
-  reviewQueue = due.length? due.slice() : vocab.slice()
-  // shuffle
-  for(let i=reviewQueue.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1)); [reviewQueue[i],reviewQueue[j]]=[reviewQueue[j],reviewQueue[i]]
-  }
-  currentIndex = 0
-}
-
-function showCard(){
-  const front = document.getElementById('front')
-  const back = document.getElementById('back')
-  if(currentIndex >= reviewQueue.length){
-    front.textContent = 'Review completed!'
-    back.textContent = ''
-    return
-  }
-  const w = reviewQueue[currentIndex]
-  front.textContent = w.term
-  back.textContent = `${w.meaning}${w.notes? ' · '+w.notes : ''}`
-}
-
-function markAnswer(correct){
-  const w = reviewQueue[currentIndex]
-  if(!w) return
-  if(correct){
-    w.level = Math.min(w.level+1, SCHEDULE_MINUTES.length-1)
-  } else {
-    w.level = Math.max(0, w.level-1)
-  }
-  const minutes = SCHEDULE_MINUTES[w.level] || SCHEDULE_MINUTES[0]
-  w.nextReview = Date.now() + minutes*60*1000
-  // update master list entry by matching term+meaning
-  const idx = vocab.findIndex(x=>x.term===w.term && x.meaning===w.meaning)
-  if(idx>=0) vocab[idx]=w
-  saveVocab()
-  currentIndex++
-  showCard()
-}
+// review functions removed
 
 function speak(text){
   if(!window.speechSynthesis) return alert('Speech synthesis not supported')
