@@ -101,10 +101,50 @@ function renderList(){
     delAudio.textContent = 'Delete audio'
     delAudio.onclick = ()=>{ const idx=vocab.findIndex(x=>x.term===w.term && x.meaning===w.meaning); if(idx>=0){ delete vocab[idx].audioData; saveVocab() } }
 
-    right.append(play, uploadBtn, recBtn, delAudio, del, fileInput)
+    // edit button
+    const editBtn = document.createElement('button')
+    editBtn.textContent = 'Edit'
+    editBtn.onclick = ()=> startEditForIndex(i, li)
+
+    right.append(play, uploadBtn, recBtn, delAudio, editBtn, del, fileInput)
     li.append(left,right)
     ul.append(li)
   })
+}
+
+function startEditForIndex(index, li){
+  const w = vocab[index]
+  if(!w) return
+  // left side becomes an inline edit form
+  const left = li.querySelector('div')
+  left.innerHTML = ''
+  const termIn = document.createElement('input')
+  termIn.value = w.term || ''
+  const meanIn = document.createElement('input')
+  meanIn.value = w.meaning || ''
+  const notesIn = document.createElement('input')
+  notesIn.value = w.notes || ''
+  termIn.style.marginRight = '6px'
+  meanIn.style.marginRight = '6px'
+  notesIn.style.marginRight = '6px'
+  left.append(termIn, meanIn, notesIn)
+  const save = document.createElement('button')
+  save.textContent = 'Save'
+  const cancel = document.createElement('button')
+  cancel.textContent = 'Cancel'
+  left.append(save, cancel)
+
+  save.onclick = ()=>{
+    const term = termIn.value.trim(); const meaning = meanIn.value.trim(); const notes = notesIn.value.trim();
+    if(!term || !meaning){ alert('Term and meaning required'); return }
+    vocab[index].term = term
+    vocab[index].meaning = meaning
+    vocab[index].notes = notes
+    vocab[index].modified = Date.now()
+    saveVocab()
+    renderList()
+  }
+  cancel.onclick = ()=>{ renderList() }
 }
 
 function playAudio(w){
