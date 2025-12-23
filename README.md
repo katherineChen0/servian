@@ -44,11 +44,3 @@ Pronunciation / Voices
   - Desktop Chrome/Firefox: voices available depend on the OS speech voices.
 
 If you want, I can package the app as a PWA so you can install it and keep voices cached.
-
-Per-word audio (upload only)
-
-- The app supports attaching per-word audio via the **Upload** button next to any word. Upload MP3/WebM/OGG files and they'll be saved in the browser (as data URLs) and used for playback.
-- Playback priority: if a word has uploaded audio it will be played; otherwise the app falls back to `speechSynthesis`.
-- Notes and limitations:
-  - Audio is stored in `localStorage` as base64 data URLs — this is convenient and requires no server, but large audio files can increase storage usage quickly (localStorage limits vary by browser).
-  - If you want persistent backups, use the Export JSON feature which includes audio data; import restores audio too.

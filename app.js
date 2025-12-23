@@ -68,37 +68,18 @@ function renderList(){
     const right = document.createElement('div')
     right.style.display='flex'
     right.style.gap='8px'
-    // play: prefer uploaded/recorded audio, else TTS
+    // play: pronounce via TTS
     const play = document.createElement('button')
     play.textContent='🔊'
     play.onclick = ()=> playAudio(w)
-
-    // upload input (hidden) and button
-    const fileInput = document.createElement('input')
-    fileInput.type = 'file'
-    fileInput.accept = 'audio/*'
-    fileInput.style.display = 'none'
-    fileInput.onchange = (e)=>{ const f=e.target.files[0]; if(f) handleUploadForWord(i,f) }
-    const uploadBtn = document.createElement('button')
-    uploadBtn.textContent = 'Upload'
-    uploadBtn.onclick = ()=> fileInput.click()
-
-    // delete word
-    const del = document.createElement('button')
-    del.textContent='Delete'
-    del.onclick = ()=>{ if(confirm('Delete this word?')){ vocab.splice(i,1); saveVocab() } }
-
-    // delete audio
-    const delAudio = document.createElement('button')
-    delAudio.textContent = 'Delete audio'
-    delAudio.onclick = ()=>{ const idx=vocab.findIndex(x=>x.term===w.term && x.meaning===w.meaning); if(idx>=0){ delete vocab[idx].audioData; saveVocab() } }
 
     // edit button
     const editBtn = document.createElement('button')
     editBtn.textContent = 'Edit'
     editBtn.onclick = ()=> startEditForIndex(i, li)
 
-    right.append(play, uploadBtn, delAudio, editBtn, del, fileInput)
+    // show only pronounce and edit buttons to keep per-word UI simple
+    right.append(play, editBtn)
     li.append(left,right)
     ul.append(li)
   })
@@ -140,26 +121,8 @@ function startEditForIndex(index, li){
 }
 
 function playAudio(w){
-  if(w && w.audioData){
-    try{
-      const a = new Audio(w.audioData)
-      a.play()
-      return
-    }catch(e){ console.warn('playback failed',e) }
-  }
-  // fallback to TTS
+  // Always use TTS pronounce for simplicity
   speak(w.term)
-}
-
-// Handle user upload for a given vocab index
-function handleUploadForWord(index, file){
-  const reader = new FileReader()
-  reader.onload = e=>{
-    const dataUrl = e.target.result
-    const idx = vocab.findIndex(x=>x.term===vocab[index].term && x.meaning===vocab[index].meaning)
-    if(idx>=0){ vocab[idx].audioData = dataUrl; saveVocab(); alert('Audio uploaded') }
-  }
-  reader.readAsDataURL(file)
 }
 
 // Recording was removed to simplify the app; use Upload for per-word audio.
@@ -212,59 +175,11 @@ function markAnswer(correct){
   showCard()
 }
 
-// Voice selection and speaking
-const VOICE_STORAGE_KEY = 'serbian_voice_name'
-
-function getSavedVoiceName(){ return localStorage.getItem(VOICE_STORAGE_KEY) }
-function saveVoiceName(name){ localStorage.setItem(VOICE_STORAGE_KEY, name) }
-
-function populateVoices(){
-  const select = document.getElementById('voiceSelect')
-  select.innerHTML = ''
-  if(!window.speechSynthesis){
-    const opt = document.createElement('option'); opt.textContent = 'No speech support'; opt.disabled=true; select.append(opt); return
-  }
-  const voices = speechSynthesis.getVoices() || []
-  // prefer voices with Serbian language tag
-  const preferred = voices.filter(v=>v.lang && v.lang.toLowerCase().startsWith('sr'))
-  const saved = getSavedVoiceName()
-  // helper to add option
-  function addOption(v){
-    const o = document.createElement('option'); o.value = v.name; o.textContent = `${v.name} — ${v.lang}`; select.append(o)
-  }
-  // if no voices yet, show placeholder
-  if(voices.length===0){
-    const o = document.createElement('option'); o.textContent = 'Loading voices…'; o.disabled=true; select.append(o); return
-  }
-  // add Serbian voices first
-  preferred.forEach(addOption)
-  // add remaining voices (avoid duplicates)
-  voices.filter(v=>!preferred.includes(v)).forEach(addOption)
-
-  // select saved voice if available, else pick best Serbian voice, else first
-  const choose = () => {
-    if(saved){
-      const matched = voices.find(v=>v.name===saved)
-      if(matched){ select.value = matched.name; return }
-    }
-    if(preferred.length) { select.value = preferred[0].name; return }
-    select.value = voices[0].name
-  }
-  choose()
-}
-
 function speak(text){
   if(!window.speechSynthesis) return alert('Speech synthesis not supported')
   const utter = new SpeechSynthesisUtterance(text)
   utter.rate = 0.95
-  // pick voice by saved selection
-  const select = document.getElementById('voiceSelect')
-  const name = select && select.value ? select.value : getSavedVoiceName()
-  if(name && window.speechSynthesis.getVoices){
-    const v = speechSynthesis.getVoices().find(x=>x.name===name)
-    if(v) utter.voice = v
-  }
-  // ensure language tag is set to Serbian to help engines choose pronunciation
+  // ask engine to use Serbian pronunciation
   utter.lang = 'sr-RS'
   speechSynthesis.cancel()
   speechSynthesis.speak(utter)
