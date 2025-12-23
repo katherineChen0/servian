@@ -35,10 +35,7 @@ const defaultVocab = [
 let vocab = []
 let reviewQueue = []
 let currentIndex = 0
-let currentRecorder = null
-let currentRecordChunks = []
-let currentRecordingIdx = null
-let currentStream = null
+// Recording removed: app uses uploaded audio or TTS only
 
 // SRS schedule in minutes (for quick testing small values, increase for real use)
 const SCHEDULE_MINUTES = [1, 10, 60*24, 60*24*3, 60*24*7, 60*24*30]
@@ -86,11 +83,6 @@ function renderList(){
     uploadBtn.textContent = 'Upload'
     uploadBtn.onclick = ()=> fileInput.click()
 
-    // record button
-    const recBtn = document.createElement('button')
-    recBtn.textContent = 'Record'
-    recBtn.onclick = ()=> toggleRecordingForIndex(i, recBtn)
-
     // delete word
     const del = document.createElement('button')
     del.textContent='Delete'
@@ -106,7 +98,7 @@ function renderList(){
     editBtn.textContent = 'Edit'
     editBtn.onclick = ()=> startEditForIndex(i, li)
 
-    right.append(play, uploadBtn, recBtn, delAudio, editBtn, del, fileInput)
+    right.append(play, uploadBtn, delAudio, editBtn, del, fileInput)
     li.append(left,right)
     ul.append(li)
   })
@@ -170,45 +162,7 @@ function handleUploadForWord(index, file){
   reader.readAsDataURL(file)
 }
 
-// Recording controls
-async function toggleRecordingForIndex(index, buttonEl){
-  if(currentRecorder && currentRecordingIdx===index){
-    // stop
-    currentRecorder.stop()
-    buttonEl.textContent = 'Record'
-    return
-  }
-  // if another recording active, stop it first
-  if(currentRecorder){ currentRecorder.stop(); }
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return alert('Recording not supported on this device')
-  try{
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true})
-    currentStream = stream
-    currentRecordChunks = []
-    const mr = new MediaRecorder(stream)
-    currentRecorder = mr
-    currentRecordingIdx = index
-    buttonEl.textContent = 'Stop'
-    mr.ondataavailable = ev => { if(ev.data && ev.data.size>0) currentRecordChunks.push(ev.data) }
-    mr.onstop = async ()=>{
-      const blob = new Blob(currentRecordChunks, {type: currentRecordChunks[0]?.type || 'audio/webm'})
-      // convert to dataURL
-      const r = new FileReader()
-      r.onload = e=>{
-        const dataUrl = e.target.result
-        const idx = vocab.findIndex(x=>x.term===vocab[index].term && x.meaning===vocab[index].meaning)
-        if(idx>=0){ vocab[idx].audioData = dataUrl; saveVocab(); alert('Recording saved') }
-      }
-      r.readAsDataURL(blob)
-      // cleanup
-      currentRecorder = null
-      currentRecordChunks = []
-      currentRecordingIdx = null
-      if(currentStream){ currentStream.getTracks().forEach(t=>t.stop()); currentStream=null }
-    }
-    mr.start()
-  }catch(err){ alert('Microphone access denied or error: '+err.message) }
-}
+// Recording was removed to simplify the app; use Upload for per-word audio.
 
 function addWord(term,meaning,notes){
   vocab.unshift(attachMeta({term,meaning,notes}))
