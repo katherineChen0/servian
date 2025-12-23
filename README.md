@@ -20,18 +20,6 @@ python3 -m http.server 8000
 
 3. (Optional) In Chrome/Safari use "Add to Home Screen" to create an app-like shortcut.
 
-Quick usage:
-
-- Add words with the form.
-- Use "Start Review" to begin a session. Press "🔊 Pronounce" for audio.
-- Mark "I knew it" or "I didn't" to move words through a simple spaced repetition schedule.
-- Export JSON/CSV to back up; import JSON to restore.
-
-Notes & next steps you might want:
-
-- Improve SRS timings (they are short for fast testing). Increase `SCHEDULE_MINUTES` in `app.js` for longer intervals.
-- Add server-hosted audio files or recorded pronunciations if `speechSynthesis` quality is insufficient.
-- Convert to PWA (add manifest, service worker) for full offline install.
 
 Pronunciation / Voices
 
@@ -43,4 +31,3 @@ Pronunciation / Voices
   - Android: Install a TTS engine that includes Serbian (Google Text-to-speech or other engines) and enable it in Settings → Text-to-speech.
   - Desktop Chrome/Firefox: voices available depend on the OS speech voices.
 
-If you want, I can package the app as a PWA so you can install it and keep voices cached.

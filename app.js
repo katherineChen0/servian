@@ -235,11 +235,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('addForm').addEventListener('submit',e=>{
     e.preventDefault(); const term=document.getElementById('term').value.trim(); const meaning=document.getElementById('meaning').value.trim(); const notes=document.getElementById('notes').value.trim(); if(!term||!meaning) return; addWord(term,meaning,notes); e.target.reset()
   })
-  document.getElementById('startReviewBtn').addEventListener('click',()=>{ buildReviewQueue(); showCard(); })
-  document.getElementById('showBackBtn').addEventListener('click',()=>{ document.getElementById('back').classList.toggle('visible'); alert(document.getElementById('back').textContent) })
-  document.getElementById('speakBtn').addEventListener('click',()=>{ const t=document.getElementById('front').textContent; speak(t) })
-  document.getElementById('correctBtn').addEventListener('click',()=>markAnswer(true))
-  document.getElementById('wrongBtn').addEventListener('click',()=>markAnswer(false))
+  // Review UI removed — keep word list controls only
   document.getElementById('exportBtn').addEventListener('click',exportJSON)
   document.getElementById('csvBtn').addEventListener('click',exportCSV)
   document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('fileInput').click())
