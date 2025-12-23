@@ -34,11 +34,26 @@
     <section class="add-area">
       <h2>Add / Edit Word</h2>
       <form id="addForm">
-        <input id="term" placeholder="term (e.g. molim te)" required>
-        <input id="meaning" placeholder="meaning (e.g. please)" required>
-        <input id="notes" placeholder="notes / phonetic / gender (optional)">
-        <main>
-          <section class="add-area">
+        <input id="term" placeholder="term (e.g. molim te)" required />
+        <input id="meaning" placeholder="meaning (e.g. please)" required />
+        <input id="notes" placeholder="notes / phonetic / gender (optional)" />
+        <button type="submit">Add Word</button>
+      </form>
+    </section>
+
+    <section class="your-words">
+      <h2>Your Words</h2>
+      <div class="words-controls">
+        <button id="exportBtn">Export JSON</button>
+        <button id="csvBtn">Export CSV</button>
+        <button id="importBtn">Import JSON</button>
+        <input id="fileInput" type="file" accept="application/json" style="display:none" />
+      </div>
+      <ul id="wordList" class="word-list" aria-live="polite"></ul>
+    </section>
+
+  </main>
+
   <script src="app.js"></script>
 </body>
 </html>
