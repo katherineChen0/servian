@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Serbian Mini Flashcards</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Serbian Mini Flashcards</h1>
+    <p class="subtitle">Add words, review with spaced repetition, hear pronunciations.</p>
+  </header>
+
+  <main>
+    <section class="card-area" id="cardArea">
+      <div id="card" class="card">
+        <div id="front" class="face front">Press "Start Review" to begin</div>
+        <div id="back" class="face back"></div>
+      </div>
+      <div class="controls">
+        <button id="startReviewBtn">Start Review</button>
+        <button id="speakBtn">🔊 Pronounce</button>
+        <button id="showBackBtn">Show Translation</button>
+      </div>
+      <div id="reviewFeedback" class="feedback">
+        <button id="correctBtn" class="good">I knew it</button>
+        <button id="wrongBtn" class="bad">I didn't</button>
+      </div>
+    </section>
+
+    <section class="add-area">
+      <h2>Add / Edit Word</h2>
+      <form id="addForm">
+        <input id="term" placeholder="term (e.g. molim te)" required>
+        <input id="meaning" placeholder="meaning (e.g. please)" required>
+        <input id="notes" placeholder="notes / phonetic / gender (optional)">
+        <button type="submit">Add</button>
+      </form>
+    </section>
+
+    <section class="list-area">
+      <h2>Your Words</h2>
+      <div class="list-actions">
+        <button id="exportBtn">Export JSON</button>
+        <button id="importBtn">Import JSON</button>
+        <button id="csvBtn">Export CSV</button>
+        <input type="file" id="fileInput" accept="application/json" style="display:none">
+      </div>
+      <ul id="wordList"></ul>
+    </section>
+  </main>
+
+  <footer>
+    <small>Works offline in the browser. For best experience host with a simple server and add to home screen.</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
