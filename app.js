@@ -241,3 +241,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('fileInput').click())
   document.getElementById('fileInput').addEventListener('change',e=>{ const f=e.target.files[0]; if(f) importJSONFile(f) })
 })
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .catch(err => console.error('SW registration failed', err))
+  })
+}
+
